@@ -41,10 +41,17 @@ export async function GET(req) {
 export async function POST(req) {
   await connectDB();
 
-  const { selfUsername, toUsername, content } = await req.json();
+  const { senderUsername, receiverUsername, content } = await req.json();
 
-  const senderUser = await User.findOne({ username: selfUsername });
-  const receiverUser = await User.findOne({ username: toUsername });
+  if (!senderUsername || !receiverUsername || !content?.trim()) {
+    return NextResponse.json(
+      { message: "senderUsername, receiverUsername and content are required" },
+      { status: 400 }
+    );
+  }
+
+  const senderUser = await User.findOne({ username: senderUsername });
+  const receiverUser = await User.findOne({ username: receiverUsername });
 
   if (!senderUser || !receiverUser) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -53,7 +60,7 @@ export async function POST(req) {
   const message = await Message.create({
     sender: senderUser._id,
     receiver: receiverUser._id,
-    content,
+    content: content.trim(),
   });
 
   return NextResponse.json({

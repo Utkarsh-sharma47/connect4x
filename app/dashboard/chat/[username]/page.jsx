@@ -80,15 +80,16 @@ export default function ChatWithUserPage() {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!content.trim() || !currentUser || !otherUsername) return;
+    const payload = {
+      senderUsername: currentUser.username,
+      receiverUsername: otherUsername,
+      content: content.trim()
+    };
     try {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          selfUsername: currentUser.username,
-          toUsername: otherUsername,
-          content: content.trim()
-        })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (res.ok) {
