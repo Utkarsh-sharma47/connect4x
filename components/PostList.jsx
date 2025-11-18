@@ -275,7 +275,7 @@ export default function PostList({ filterByUsername }) {
                 color: reposted ? "#38bdf8" : "inherit"
               }}
             >
-              🔁 {reposted ? "Reposted" : "Repost"}
+              {reposted ? "Reposted" : "Repost"}
             </button>
             <span style={{ color: "#9ca3af" }}>
               {post.repostCount || 0} repost
@@ -287,7 +287,7 @@ export default function PostList({ filterByUsername }) {
               className="btn-ghost"
               style={{ padding: "0.2rem 0.6rem", borderRadius: 999 }}
             >
-              💬 {commentsOpen ? "Hide" : "View"} comments ({post.commentCount || 0})
+              {commentsOpen ? "Hide" : "View"} comments ({post.commentCount || 0})
             </button>
           </div>
           {commentsOpen && (

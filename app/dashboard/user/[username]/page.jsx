@@ -6,7 +6,7 @@ import PostList from "@/components/PostList";
 
 export default function UserProfilePage() {
   const params = useParams();
-  const username = params?.username;
+  const username = params?.username; // make sure your folder is [username]
   const [user, setUser] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
