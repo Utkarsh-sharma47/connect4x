@@ -51,7 +51,7 @@ export default function NewPostForm({ currentUser }) {
           {content.length}/280
         </span>
         <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? "Posting..." : "Chirp"}
+          {loading ? "Posting..." : "Post"}
         </button>
       </div>
     </form>
