@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 export default function ChatLandingPage() {
   const [users, setUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     async function fetchUsers() {
@@ -19,6 +20,27 @@ export default function ChatLandingPage() {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("connect4x:user");
+    if (!stored) {
+      setCurrentUser(null);
+      return;
+    }
+    try {
+      setCurrentUser(JSON.parse(stored));
+    } catch {
+      setCurrentUser(null);
+    }
+  }, []);
+
+  const visibleUsers = currentUser
+    ? users.filter(
+        (u) =>
+          u?.id !== currentUser?.id && u?.username !== currentUser?.username
+      )
+    : users;
+
   return (
     <div className="card" style={{ display: "grid", gap: "0.8rem" }}>
       <div>
@@ -29,7 +51,7 @@ export default function ChatLandingPage() {
         </p>
       </div>
       <div style={{ display: "grid", gap: "0.5rem" }}>
-        {users.map((u) => (
+        {visibleUsers.map((u) => (
           <Link key={u.id} href={`/dashboard/chat/${u.username}`}>
             <div
               style={{

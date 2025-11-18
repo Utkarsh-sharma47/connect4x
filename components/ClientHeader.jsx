@@ -2,24 +2,51 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function ClientHeader() {
   const [user, setUser] = useState(null);
+  const pathname = usePathname();
 
-  useEffect(() => {
+  const readUserFromStorage = () => {
     if (typeof window === "undefined") return;
-    const stored = localStorage.getItem("connect4x:user");
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch {
+    const stored = window.localStorage.getItem("connect4x:user");
+    if (!stored) {
+      setUser(null);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.username) {
+        setUser(parsed);
+      } else {
         setUser(null);
       }
+    } catch {
+      setUser(null);
     }
+  };
+
+  useEffect(() => {
+    readUserFromStorage();
+  }, []);
+
+  // Re-check whenever route changes (so after login redirect it updates)
+  useEffect(() => {
+    readUserFromStorage();
+  }, [pathname]);
+
+  // Also respond to storage changes (other tabs)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => readUserFromStorage();
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("connect4x:user");
+    if (typeof window === "undefined") return;
+    window.localStorage.removeItem("connect4x:user");
     setUser(null);
     window.location.href = "/";
   };
@@ -36,10 +63,13 @@ export default function ClientHeader() {
         top: 0,
         zIndex: 20,
         background: "rgba(2,6,23,0.92)",
-        backdropFilter: "blur(16px)"
+        backdropFilter: "blur(16px)",
       }}
     >
-      <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <Link
+        href="/"
+        style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+      >
         <div
           style={{
             width: 30,
@@ -50,14 +80,16 @@ export default function ClientHeader() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: "1rem"
+            fontSize: "1rem",
           }}
         >
           🦋
         </div>
         <span style={{ fontWeight: 700, fontSize: "1.05rem" }}>Connect4x</span>
       </Link>
-      {!user ? (
+
+      {/* NOT LOGGED IN: show Login + Signup */}
+      {!user && (
         <nav style={{ display: "flex", gap: "0.75rem" }}>
           <Link href="/login">
             <button className="btn-ghost">Log in</button>
@@ -66,11 +98,24 @@ export default function ClientHeader() {
             <button className="btn-primary">Sign up</button>
           </Link>
         </nav>
-      ) : (
-        <nav style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+      )}
+
+      {/* LOGGED IN: show Open app + Profile + user pill + Logout */}
+      {user && (
+        <nav
+          style={{
+            display: "flex",
+            gap: "0.75rem",
+            alignItems: "center",
+          }}
+        >
           <Link href="/dashboard">
             <button className="btn-ghost">Open app</button>
           </Link>
+          <Link href="/dashboard/profile">
+            <button className="btn-ghost">Profile</button>
+          </Link>
+
           <div
             style={{
               display: "flex",
@@ -79,7 +124,7 @@ export default function ClientHeader() {
               padding: "0.35rem 0.75rem",
               borderRadius: 999,
               border: "1px solid #1f2937",
-              background: "#020617"
+              background: "#020617",
             }}
           >
             <div
@@ -88,7 +133,7 @@ export default function ClientHeader() {
                 height: 28,
                 borderRadius: "999px",
                 background:
-                  "radial-gradient(circle at 30% 30%, #38bdf8, #a855f7)"
+                  "radial-gradient(circle at 30% 30%, #38bdf8, #a855f7)",
               }}
             />
             <div style={{ display: "flex", flexDirection: "column" }}>
@@ -100,12 +145,14 @@ export default function ClientHeader() {
               </span>
             </div>
             <button
+              type="button"
               onClick={handleLogout}
               style={{
                 border: "none",
                 background: "transparent",
                 fontSize: "0.75rem",
-                color: "#f97373"
+                color: "#f97373",
+                cursor: "pointer",
               }}
             >
               Logout

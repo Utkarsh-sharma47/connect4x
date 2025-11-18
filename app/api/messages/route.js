@@ -21,7 +21,7 @@ export async function GET(req) {
     const otherUser = await User.findOne({ username: otherUsername });
 
     if (!selfUser || !otherUser) {
-      return NextResponse.json({ messages: [] });
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const messages = await Message.find({
@@ -60,18 +60,15 @@ export async function POST(req) {
       );
     }
 
-    const sender = await User.findOne({ username: selfUsername });
-    const receiver = await User.findOne({ username: toUsername });
-    if (!sender || !receiver) {
-      return NextResponse.json(
-        { message: "Sender or receiver not found" },
-        { status: 404 }
-      );
+    const senderUser = await User.findOne({ username: selfUsername });
+    const receiverUser = await User.findOne({ username: toUsername });
+    if (!senderUser || !receiverUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const message = await Message.create({
-      sender: sender._id,
-      receiver: receiver._id,
+      sender: senderUser._id,
+      receiver: receiverUser._id,
       content
     });
 
@@ -80,8 +77,8 @@ export async function POST(req) {
         id: message._id.toString(),
         content: message.content,
         createdAt: message.createdAt,
-        senderUsername: sender.username,
-        receiverUsername: receiver.username
+        senderUsername: senderUser.username,
+        receiverUsername: receiverUser.username
       }
     });
   } catch (err) {

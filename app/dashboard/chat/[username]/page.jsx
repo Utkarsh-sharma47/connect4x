@@ -13,9 +13,16 @@ export default function ChatWithUserPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("connect4x:user");
-    if (stored) {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("connect4x:user");
+    if (!stored) {
+      setCurrentUser(null);
+      return;
+    }
+    try {
       setCurrentUser(JSON.parse(stored));
+    } catch {
+      setCurrentUser(null);
     }
   }, []);
 
@@ -37,7 +44,9 @@ export default function ChatWithUserPage() {
 
   useEffect(() => {
     if (!currentUser || !otherUsername) return;
-    async function fetchMessages() {
+    let isCancelled = false;
+
+    const fetchMessages = async () => {
       try {
         const msgRes = await fetch(
           `/api/messages?self=${encodeURIComponent(
@@ -45,28 +54,39 @@ export default function ChatWithUserPage() {
           )}&other=${encodeURIComponent(otherUsername)}`
         );
         const msgData = await msgRes.json();
-        if (msgRes.ok) {
+        if (!isCancelled && msgRes.ok) {
           setMessages(msgData.messages || []);
         }
       } catch (err) {
-        console.error(err);
+        if (!isCancelled) {
+          console.error("Failed to fetch messages", err);
+        }
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
-    }
+    };
+
     fetchMessages();
+    const intervalId = setInterval(fetchMessages, 2000);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(intervalId);
+    };
   }, [currentUser, otherUsername]);
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!content.trim() || !otherUser || !currentUser) return;
+    if (!content.trim() || !currentUser || !otherUsername) return;
     try {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           selfUsername: currentUser.username,
-          toUsername: otherUser.username,
+          toUsername: otherUsername,
           content: content.trim()
         })
       });
@@ -75,10 +95,10 @@ export default function ChatWithUserPage() {
         setMessages((prev) => [...prev, data.message]);
         setContent("");
       } else {
-        alert(data.message || "Failed to send message");
+        console.error("Failed to send message", data?.error || data);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to send message", err);
     }
   };
 
