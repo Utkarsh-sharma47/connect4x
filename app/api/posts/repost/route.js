@@ -6,8 +6,8 @@ import User from "@/models/User";
 export async function POST(req) {
   try {
     await connectDB();
-
     const { postId, userId } = await req.json();
+
     if (!postId || !userId) {
       return NextResponse.json(
         { message: "postId and userId are required." },
@@ -17,30 +17,24 @@ export async function POST(req) {
 
     const post = await Post.findById(postId);
     if (!post) {
-      return NextResponse.json(
-        { message: "Post not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: "Post not found" }, { status: 404 });
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      return NextResponse.json(
-        { message: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    const alreadyLiked = post.likes.some(
+    const alreadyReposted = post.reposts.some(
       (id) => id.toString() === userId.toString()
     );
 
-    if (alreadyLiked) {
-      post.likes = post.likes.filter(
+    if (alreadyReposted) {
+      post.reposts = post.reposts.filter(
         (id) => id.toString() !== userId.toString()
       );
     } else {
-      post.likes.push(userId);
+      post.reposts.push(userId);
     }
 
     await post.save();
@@ -48,11 +42,9 @@ export async function POST(req) {
     return NextResponse.json({
       post: {
         id: post._id.toString(),
-        content: post.content,
-        likes: post.likes.map((id) => id.toString()),
-        likeCount: post.likes.length,
-        liked: !alreadyLiked,
-        createdAt: post.createdAt
+        reposts: post.reposts.map((id) => id.toString()),
+        repostCount: post.reposts.length,
+        reposted: !alreadyReposted
       }
     });
   } catch (err) {
@@ -60,3 +52,4 @@ export async function POST(req) {
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
+

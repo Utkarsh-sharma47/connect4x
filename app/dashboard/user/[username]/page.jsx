@@ -11,6 +11,8 @@ export default function UserProfilePage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [info, setInfo] = useState("");
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("connect4x:user");
@@ -39,6 +41,62 @@ export default function UserProfilePage() {
     }
     fetchUser();
   }, [username]);
+
+  useEffect(() => {
+    if (!currentUser || !user) return;
+    if (currentUser.username === user.username) {
+      setIsFollowing(false);
+      return;
+    }
+    let ignore = false;
+    async function fetchFollowStatus() {
+      try {
+        const res = await fetch(
+          `/api/follow?follower=${encodeURIComponent(
+            currentUser.username
+          )}&following=${encodeURIComponent(user.username)}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!ignore) {
+          setIsFollowing(Boolean(data.following));
+        }
+      } catch (err) {
+        if (!ignore) {
+          console.error("Failed to fetch follow status", err);
+        }
+      }
+    }
+    fetchFollowStatus();
+    return () => {
+      ignore = true;
+    };
+  }, [currentUser, user]);
+
+  const handleToggleFollow = async () => {
+    if (!currentUser || !user || currentUser.username === user.username) return;
+    setFollowLoading(true);
+    try {
+      const res = await fetch("/api/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          followerUsername: currentUser.username,
+          followingUsername: user.username
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setIsFollowing(Boolean(data.following));
+      } else {
+        console.error("Failed to update follow status", data?.message || data);
+      }
+    } catch (err) {
+      console.error("Failed to update follow status", err);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   const handleAddFriend = async () => {
     if (!currentUser || !user) return;
@@ -76,6 +134,19 @@ export default function UserProfilePage() {
   }
 
   const isOwnProfile = currentUser && currentUser.username === user.username;
+
+  const followButtonStyle = {
+    border: "none",
+    borderRadius: "999px",
+    padding: "0.45rem 1.2rem",
+    background: "linear-gradient(135deg, #4f46e5, #a855f7)",
+    color: "#ffffff",
+    fontWeight: 600,
+    cursor: followLoading ? "not-allowed" : "pointer",
+    opacity: followLoading ? 0.75 : 1,
+    transform: "scale(1)",
+    transition: "transform 0.2s ease, opacity 0.2s ease"
+  };
 
   return (
     <div className="card" style={{ display: "grid", gap: "1rem" }}>
@@ -131,7 +202,17 @@ export default function UserProfilePage() {
           </p>
         </div>
         {!isOwnProfile && currentUser && (
-          <div style={{ display: "flex", gap: "0.4rem" }}>
+          <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+            <button
+              type="button"
+              style={followButtonStyle}
+              disabled={followLoading}
+              onClick={handleToggleFollow}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            >
+              {isFollowing ? "Following" : "Follow"}
+            </button>
             <button className="btn-ghost" onClick={handleAddFriend}>
               Add to friends
             </button>

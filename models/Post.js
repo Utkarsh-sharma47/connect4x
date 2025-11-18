@@ -3,7 +3,14 @@ import mongoose from "mongoose";
 const PostSchema = new mongoose.Schema(
   {
     content: { type: String, required: true },
-    likes: { type: Number, default: 0 },
+    likes: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: []
+    },
+    reposts: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: []
+    },
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
